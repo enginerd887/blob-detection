@@ -6,10 +6,19 @@ using namespace cv;
 using namespace std;
 
 // Globals
+const int minTmax = 50;
+const int maxTmax = 1000;
 const int areaMax = 1000;
-int areaSlider;
-double minArea;
+const int convexMax = 100;
+const int circleMax = 100;
+const int inertiaMax = 100;
 
+int minTslider = 20;
+int maxTslider = 1000;
+int areaSlider = 400;
+int convexSlider = 87;
+int circleSlider = 3;
+int inertiaSlider = 1;
 // Setup SimpleBlobDetector parameters.
 SimpleBlobDetector::Params params;
 cv::Ptr<cv::SimpleBlobDetector> detector;
@@ -19,24 +28,24 @@ cv::Ptr<cv::SimpleBlobDetector> detector;
 void on_trackbar(int,void*)
 {
   // Change thresholds
-  params.minThreshold = 20;
-  params.maxThreshold = 1000;
+  params.minThreshold = (double)minTslider;
+  params.maxThreshold = (double)maxTslider;
 
   // Filter by Area.
   params.filterByArea = true;
   params.minArea = (double)areaSlider;
 
   // Filter by Circularity
-  params.filterByCircularity = false;
-  params.minCircularity = 0.3;
+  params.filterByCircularity = true;
+  params.minCircularity = (double)circleSlider/circleMax;
 
   // Filter by Convexity
   params.filterByConvexity = true;
-  params.minConvexity = 0.87;
+  params.minConvexity = (double)convexSlider/convexMax;
 
   // Filter by Inertia
-  params.filterByInertia = true;
-  params.minInertiaRatio = 0.01;
+  params.filterByInertia = false;
+  params.minInertiaRatio = (double)inertiaSlider/inertiaMax;
 
   detector = cv::SimpleBlobDetector::create(params);
 }
@@ -56,9 +65,27 @@ int main( int argc, char** argv )
   namedWindow("keypoints",1);
 
   //Create TrackBar
-  char areaName[20];
+  char minTname[30];
+  char maxTname[30];
+  char areaName[30];
+  char circleName[30];
+  char convexName[30];
+  char inertiaName[30];
+
+  sprintf(minTname,"Min. Threshold");
+  sprintf(maxTname,"Max. Threshold");
   sprintf(areaName,"Min. Pixel Area");
+  sprintf(circleName,"Min. Circularity");
+  sprintf(convexName, "Min. Convexity");
+  sprintf(inertiaName,"Min. Inertia Ratio");
+
+  createTrackbar(minTname,"keypoints",&minTslider,minTmax,on_trackbar );
+  createTrackbar(maxTname,"keypoints",&maxTslider,maxTmax,on_trackbar );
   createTrackbar(areaName,"keypoints",&areaSlider,areaMax,on_trackbar );
+  createTrackbar(circleName,"keypoints",&circleSlider,circleMax,on_trackbar );
+  createTrackbar(convexName,"keypoints",&convexSlider,convexMax,on_trackbar );
+  createTrackbar(inertiaName,"keypoints",&inertiaSlider,inertiaMax,on_trackbar );
+
 
   for(;;)
   {
@@ -78,7 +105,6 @@ int main( int argc, char** argv )
 
       // Show blobs
       imshow("keypoints", im_with_keypoints );
-      cout << minArea << " " << params.minArea << endl;
       if(waitKey(30) >= 0) break;
   }
   // the camera will be deinitialized automatically in VideoCapture destructor
