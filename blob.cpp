@@ -5,27 +5,26 @@
 using namespace cv;
 using namespace std;
 
-int main( int argc, char** argv )
+// Globals
+const int areaMax = 1000;
+int areaSlider;
+double minArea;
+
+// Setup SimpleBlobDetector parameters.
+SimpleBlobDetector::Params params;
+cv::Ptr<cv::SimpleBlobDetector> detector;
+
+// Function for when trackbar changes
+
+void on_trackbar(int,void*)
 {
-
-  VideoCapture cap(1); // open the default camera
-  if(!cap.isOpened())  // check if we succeeded
-      return -1;
-
-  // Declare a named window for the camera image
-  Mat edges;
-  namedWindow("edges",1);
-
-  // Setup SimpleBlobDetector parameters.
-  SimpleBlobDetector::Params params;
-
   // Change thresholds
   params.minThreshold = 20;
   params.maxThreshold = 1000;
 
   // Filter by Area.
   params.filterByArea = true;
-  params.minArea = 400;
+  params.minArea = (double)areaSlider;
 
   // Filter by Circularity
   params.filterByCircularity = false;
@@ -39,17 +38,34 @@ int main( int argc, char** argv )
   params.filterByInertia = true;
   params.minInertiaRatio = 0.01;
 
-  cv::Ptr<cv::SimpleBlobDetector> detector = cv::SimpleBlobDetector::create(params);
+  detector = cv::SimpleBlobDetector::create(params);
+}
+
+int main( int argc, char** argv )
+{
+
+  VideoCapture cap(1); // open the default camera
+  if(!cap.isOpened())  // check if we succeeded
+      return -1;
+
+
   // Storage for blobs
   std::vector<KeyPoint> keypoints;
+
+  // Create window
+  namedWindow("keypoints",1);
+
+  //Create TrackBar
+  char areaName[20];
+  sprintf(areaName,"Min. Pixel Area");
+  createTrackbar(areaName,"keypoints",&areaSlider,areaMax,on_trackbar );
 
   for(;;)
   {
       Mat im;
       cap >> im; // get a new frame from camera
-      cvtColor(im, edges, COLOR_BGR2GRAY);
-      GaussianBlur(edges, edges, Size(7,7), 1.5, 1.5);
-
+      GaussianBlur(im, im, Size(7,7), 1.5, 1.5);
+      on_trackbar(areaSlider, 0);
       // Detect blobs
       detector->detect( im, keypoints );
 
@@ -62,7 +78,7 @@ int main( int argc, char** argv )
 
       // Show blobs
       imshow("keypoints", im_with_keypoints );
-
+      cout << minArea << " " << params.minArea << endl;
       if(waitKey(30) >= 0) break;
   }
   // the camera will be deinitialized automatically in VideoCapture destructor
