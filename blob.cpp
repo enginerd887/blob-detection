@@ -1,6 +1,9 @@
 #include "opencv2/opencv.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/highgui.hpp"
+#include <algorithm>
+#include <iterator>
+
 
 using namespace cv;
 using namespace std;
@@ -22,6 +25,13 @@ int inertiaSlider = 1;
 // Setup SimpleBlobDetector parameters.
 SimpleBlobDetector::Params params;
 cv::Ptr<cv::SimpleBlobDetector> detector;
+
+//note the const
+void display_vector(const vector<int> &v)
+{
+    std::copy(v.begin(), v.end(),
+        std::ostream_iterator<int>(std::cout, " "));
+}
 
 // Function for when trackbar changes
 
@@ -53,13 +63,13 @@ void on_trackbar(int,void*)
 int main( int argc, char** argv )
 {
 
-  VideoCapture cap(1); // open the default camera
+  VideoCapture cap(0); // open the default camera
   if(!cap.isOpened())  // check if we succeeded
       return -1;
 
 
   // Storage for blobs
-  std::vector<KeyPoint> keypoints;
+  std::vector<KeyPoint> keypointList;
 
   // Create window
   namedWindow("keypoints",1);
@@ -86,25 +96,36 @@ int main( int argc, char** argv )
   createTrackbar(convexName,"keypoints",&convexSlider,convexMax,on_trackbar );
   createTrackbar(inertiaName,"keypoints",&inertiaSlider,inertiaMax,on_trackbar );
 
-
-  for(;;)
+  float lastX = 0;
+  float lastY = 0;
+  float diffX,diffY;
+  while (1)
   {
       Mat im;
       cap >> im; // get a new frame from camera
       GaussianBlur(im, im, Size(7,7), 1.5, 1.5);
       on_trackbar(areaSlider, 0);
       // Detect blobs
-      detector->detect( im, keypoints );
+      detector->detect( im, keypointList );
 
       // Draw detected blobs as red circles.
       // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
       // the size of the circle corresponds to the size of blob
 
       Mat im_with_keypoints;
-      drawKeypoints( im, keypoints, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+      drawKeypoints( im, keypointList, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
 
       // Show blobs
       imshow("keypoints", im_with_keypoints );
+
+      diffX = keypointList[0].pt.x - lastX;
+      diffY = keypointList[0].pt.y - lastY;
+
+      cout << diffX << " " << diffY << endl;
+
+      lastX = keypointList[0].pt.x;
+      lastY = keypointList[0].pt.y;
+
       if(waitKey(30) >= 0) break;
   }
   // the camera will be deinitialized automatically in VideoCapture destructor
