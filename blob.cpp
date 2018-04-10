@@ -63,7 +63,7 @@ void on_trackbar(int,void*)
 int main( int argc, char** argv )
 {
 
-  VideoCapture cap(0); // open the default camera
+  VideoCapture cap(1); // open the default camera
   if(!cap.isOpened())  // check if we succeeded
       return -1;
 
@@ -96,9 +96,7 @@ int main( int argc, char** argv )
   createTrackbar(convexName,"keypoints",&convexSlider,convexMax,on_trackbar );
   createTrackbar(inertiaName,"keypoints",&inertiaSlider,inertiaMax,on_trackbar );
 
-  float lastX = 0;
-  float lastY = 0;
-  float diffX,diffY;
+
   while (1)
   {
       Mat im;
@@ -118,16 +116,36 @@ int main( int argc, char** argv )
       // Show blobs
       imshow("keypoints", im_with_keypoints );
 
-      diffX = keypointList[0].pt.x - lastX;
-      diffY = keypointList[0].pt.y - lastY;
+      //diffX = keypointList[0].pt.x - lastX;
+      //diffY = keypointList[0].pt.y - lastY;
 
-      cout << diffX << " " << diffY << endl;
+      // cout << diffX << " " << diffY << endl;
+      //
+      // lastX = keypointList[0].pt.x;
+      // lastY = keypointList[0].pt.y;
+      fstream outputFile;
+      outputFile.open( "outputFile.txt", ios::out );
+      if (keypointList.size() > 0){
+        double xSum = 0;
+        double ySum = 0;
+        for( size_t ii = 0; ii < keypointList.size( ); ++ii ){
+          xSum += keypointList[ii].pt.x;
+          ySum += keypointList[ii].pt.y;
+        }
+        double xAvg = xSum/keypointList.size();
+        double yAvg = ySum/keypointList.size();
+        cout << xAvg << " " << yAvg << endl;
+        Point2f a(xAvg,yAvg);
+        Point centroidVal = a;
+        circle(im_with_keypoints,centroidVal,10.0,Scalar(255,0,0),-1,8);
+        imshow("keypoints", im_with_keypoints);
+      }
+      outputFile.close( );
 
-      lastX = keypointList[0].pt.x;
-      lastY = keypointList[0].pt.y;
 
-      if(waitKey(30) >= 0) break;
+      if(waitKey(40) >= 0) break;
   }
+
   // the camera will be deinitialized automatically in VideoCapture destructor
   return 0;
 }
