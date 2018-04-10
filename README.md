@@ -25,3 +25,11 @@ The number in parentheses tells OpenCV which camera you want to use. If it is se
 # Changing the thresholds
 
 As written, the code allows the user to filter possible blob candidates by Threshold (color difference with surroundings), Area (# of pixels filled up), Circularity (self-explanatory), Convexity, and Inertia. These flags can be set to true or false. If true, the values to filter by can be set as well.
+
+# Centroid detection
+
+The code now allows for centroid detection. In each frame, it will average out the x and y locations of the keypoints in order to determine the centroid, and will then plot said centroid as a blue filled circle on the image in real time. Test it out using the following images:
+
+![Dark Circle](https://github.com/enginerd887/blob-detection/blob/master/Reverse%20Circle.jpg) ![Reverse Circle](https://github.com/enginerd887/blob-detection/blob/master/hvgqV.png)
+
+Note that you may have to adjust the minimum captured pixel area using the sliders.
