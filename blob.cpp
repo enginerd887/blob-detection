@@ -116,31 +116,37 @@ int main( int argc, char** argv )
       // Show blobs
       imshow("keypoints", im_with_keypoints );
 
-      //diffX = keypointList[0].pt.x - lastX;
-      //diffY = keypointList[0].pt.y - lastY;
-
-      // cout << diffX << " " << diffY << endl;
-      //
-      // lastX = keypointList[0].pt.x;
-      // lastY = keypointList[0].pt.y;
-      fstream outputFile;
-      outputFile.open( "outputFile.txt", ios::out );
+      // Check if there are any keypoints in view
       if (keypointList.size() > 0){
         double xSum = 0;
         double ySum = 0;
+
+        // Add up all the x and y values respectively
         for( size_t ii = 0; ii < keypointList.size( ); ++ii ){
           xSum += keypointList[ii].pt.x;
           ySum += keypointList[ii].pt.y;
         }
+        // Divide by number of keypoints to get centroid of blobs
         double xAvg = xSum/keypointList.size();
         double yAvg = ySum/keypointList.size();
+
+        // Output the centroid
         cout << xAvg << " " << yAvg << endl;
+
+        // Convert centroid values to an OpenCV "Point"
         Point2f a(xAvg,yAvg);
         Point centroidVal = a;
-        circle(im_with_keypoints,centroidVal,10.0,Scalar(255,0,0),-1,8);
+
+        // Draw a filled blue circle at the centroidVal
+
+        //syntax:
+        //circle(image,center point, size, color, fill, lineType)
+        circle(im_with_keypoints,centroidVal,10.0,Scalar(100,255,100),-1,8);
+
+        //Draw the circle to the screen
         imshow("keypoints", im_with_keypoints);
       }
-      outputFile.close( );
+
 
 
       if(waitKey(40) >= 0) break;
