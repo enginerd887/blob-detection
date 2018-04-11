@@ -28,8 +28,10 @@ As written, the code allows the user to filter possible blob candidates by Thres
 
 # Centroid detection
 
-The code now allows for centroid detection. In each frame, it will average out the x and y locations of the keypoints in order to determine the centroid, and will then plot said centroid as a blue filled circle on the image in real time. Test it out using the following images:
+The code now allows for centroid detection. In each frame, it will average out the x and y locations of the keypoints in order to determine the centroid, and will then plot said centroid as a green filled circle on the image in real time. Test it out using the following images:
 
 ![Dark Circle](https://github.com/enginerd887/blob-detection/blob/master/Reverse%20Circle.jpg) ![Reverse Circle](https://github.com/enginerd887/blob-detection/blob/master/hvgqv.png)
 
 Note that you may have to adjust the minimum captured pixel area using the sliders.
+
+The code is currently set up to collect the system centroid for the first 100 frames, and then leaves a reference mark at the location of the centroid when those iterations are complete (shown by a dark green circle). A light green circle shows the current centroid, so the relative motion from the starting configuration can be determined.

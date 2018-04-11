@@ -18,7 +18,7 @@ const int inertiaMax = 100;
 
 int minTslider = 20;
 int maxTslider = 1000;
-int areaSlider = 400;
+int areaSlider = 100;
 int convexSlider = 87;
 int circleSlider = 3;
 int inertiaSlider = 1;
@@ -96,10 +96,15 @@ int main( int argc, char** argv )
   createTrackbar(convexName,"keypoints",&convexSlider,convexMax,on_trackbar );
   createTrackbar(inertiaName,"keypoints",&inertiaSlider,inertiaMax,on_trackbar );
 
+  // Will be used later to hold starting centroid of blobs
+  Point2f b(0.0,0.0);
+  Point startPoint = b;
+  int counter = 0;
 
   while (1)
   {
       Mat im;
+
       cap >> im; // get a new frame from camera
       GaussianBlur(im, im, Size(7,7), 1.5, 1.5);
       on_trackbar(areaSlider, 0);
@@ -116,8 +121,10 @@ int main( int argc, char** argv )
       // Show blobs
       imshow("keypoints", im_with_keypoints );
 
+
       // Check if there are any keypoints in view
       if (keypointList.size() > 0){
+
         double xSum = 0;
         double ySum = 0;
 
@@ -137,11 +144,21 @@ int main( int argc, char** argv )
         Point2f a(xAvg,yAvg);
         Point centroidVal = a;
 
+
+        //On the first few iterations through, capture the centroid
+        if (counter < 100){
+          startPoint = centroidVal;
+          counter++;
+          cout << "caught Start!" << endl;
+        }
+        // Afterwards, lock the starting centroid
+
         // Draw a filled blue circle at the centroidVal
 
         //syntax:
         //circle(image,center point, size, color, fill, lineType)
         circle(im_with_keypoints,centroidVal,10.0,Scalar(100,255,100),-1,8);
+        circle(im_with_keypoints,startPoint,10.0,Scalar(100,150,50),-1,8);
 
         //Draw the circle to the screen
         imshow("keypoints", im_with_keypoints);
