@@ -109,7 +109,6 @@ int main( int argc, char** argv )
   createTrackbar(convexName,"keypoints",&convexSlider,convexMax,on_trackbar );
   createTrackbar(inertiaName,"keypoints",&inertiaSlider,inertiaMax,on_trackbar );
 
-  namedWindow("Object Detection", WINDOW_NORMAL);
       //-- Trackbars to set thresholds for RGB values
   createTrackbar("Low R","threshold", &low_r, 255, on_low_r_thresh_trackbar);
   createTrackbar("High R","threshold", &high_r, 255, on_high_r_thresh_trackbar);
@@ -123,6 +122,12 @@ int main( int argc, char** argv )
   Point startPoint = b;
   int counter = 0;
 
+  // Capture the reference images
+  Mat ref;
+  cap >> ref;
+
+  //cvtColor(ref,ref,COLOR_RGB2GRAY);
+
   while (1)
   {
       Mat im;
@@ -130,10 +135,16 @@ int main( int argc, char** argv )
 
       cap >> im; // get a new frame from camera
       //cvtColor(im,im,COLOR_RGB2GRAY);
+      //cout << send arrays to the screen for debugging
+      absdiff(im,ref,filtered);
+      cvtColor(filtered,filtered,COLOR_RGB2GRAY);
+      threshold(filtered,filtered,20,200,0);
+      //bitwise_not(filtered,filtered);
+
       //adaptiveThreshold(im,im,150,ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY,11,12);
       //threshold(im,im,100,200,0);
-      inRange(im,Scalar(low_b,low_g,low_r), Scalar(high_b,high_g,high_r),filtered);
-      bitwise_not(filtered,filtered);
+      //inRange(im,Scalar(low_b,low_g,low_r), Scalar(high_b,high_g,high_r),filtered);
+      //bitwise_not(filtered,filtered);
       GaussianBlur(im, im, Size(7,7), 1.5, 1.5);
       GaussianBlur(filtered,filtered,Size(7,7),1.5,1.5);
       on_trackbar(areaSlider, 0);
