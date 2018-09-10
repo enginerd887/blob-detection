@@ -15,6 +15,7 @@ void on_low_g_thresh_trackbar(int, void *);
 void on_high_g_thresh_trackbar(int, void *);
 void on_low_b_thresh_trackbar(int, void *);
 void on_high_b_thresh_trackbar(int, void *);
+string type2str(int type);
 int low_r=30, low_g=30, low_b=30;
 int high_r=100, high_g=100, high_b=100;
 
@@ -124,21 +125,35 @@ int main( int argc, char** argv )
 
   // Capture the reference images
   Mat ref;
+  Mat ref2;
+
   cap >> ref;
+  waitKey(200);
+  cap >> ref2;
+
+
+  //cout << ref/ref2 << endl;
+
+
 
   //cvtColor(ref,ref,COLOR_RGB2GRAY);
+  string ty = type2str(ref.type());
+  printf("Matrix: %s %dx%d \n", ty.c_str(),ref.cols,ref.rows);
 
   while (1)
   {
       Mat im;
+      Mat imConvert;
       Mat filtered;
 
       cap >> im; // get a new frame from camera
+
       //cvtColor(im,im,COLOR_RGB2GRAY);
-      //cout << send arrays to the screen for debugging
-      absdiff(im,ref,filtered);
+
+      filtered = (im*100)/ref;
+      //absdiff(im,ref,filtered);
       cvtColor(filtered,filtered,COLOR_RGB2GRAY);
-      threshold(filtered,filtered,20,200,0);
+      threshold(filtered,filtered,80,200,0);
       //bitwise_not(filtered,filtered);
 
       //adaptiveThreshold(im,im,150,ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY,11,12);
@@ -246,4 +261,27 @@ void on_high_b_thresh_trackbar(int, void *)
 {
     high_b = max(high_b, low_b+1);
     setTrackbarPos("High B", "threshold", high_b);
+}
+
+string type2str(int type) {
+  string r;
+
+  uchar depth = type & CV_MAT_DEPTH_MASK;
+  uchar chans = 1 + (type >> CV_CN_SHIFT);
+
+  switch ( depth ) {
+    case CV_8U:  r = "8U"; break;
+    case CV_8S:  r = "8S"; break;
+    case CV_16U: r = "16U"; break;
+    case CV_16S: r = "16S"; break;
+    case CV_32S: r = "32S"; break;
+    case CV_32F: r = "32F"; break;
+    case CV_64F: r = "64F"; break;
+    default:     r = "User"; break;
+  }
+
+  r += "C";
+  r += (chans+'0');
+
+  return r;
 }
