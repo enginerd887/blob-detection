@@ -1,14 +1,17 @@
 #include "opencv2/opencv.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/highgui.hpp"
+#include <cmath>
 #include <algorithm>
 #include <iterator>
 
 
-using namespace cv;
-using namespace std;
+using namespace cv;  // Computer vision namespace
+using namespace std; // Standard C++ namespace
 
+////////////////////////// Program Setup //////////////////////////////////////
 
+// Function Declarations
 void on_low_r_thresh_trackbar(int, void *);
 void on_high_r_thresh_trackbar(int, void *);
 void on_low_g_thresh_trackbar(int, void *);
@@ -16,10 +19,11 @@ void on_high_g_thresh_trackbar(int, void *);
 void on_low_b_thresh_trackbar(int, void *);
 void on_high_b_thresh_trackbar(int, void *);
 string type2str(int type);
+
+// Globals (May need to scan through this and delete stuff)
 int low_r=30, low_g=30, low_b=30;
 int high_r=100, high_g=100, high_b=100;
 
-// Globals
 const int minTmax = 50;
 const int maxTmax = 1000;
 const int areaMax = 1000;
@@ -29,18 +33,20 @@ const int inertiaMax = 100;
 
 int minTslider = 20;
 int maxTslider = 1000;
-int areaSlider = 100;
+int areaSlider = 600;
 int convexSlider = 87;
 int circleSlider = 3;
 int inertiaSlider = 1;
 
 int oldSize = 0;
+
+/////////////////////// Blob Detector Setup ///////////////////////////////////
+
 // Setup SimpleBlobDetector parameters.
 SimpleBlobDetector::Params params;
 cv::Ptr<cv::SimpleBlobDetector> detector;
 
-//note the const
-void display_vector(const vector<int> &v)
+void display_vector(const vector<int> &v) //note the const
 {
     std::copy(v.begin(), v.end(),
         std::ostream_iterator<int>(std::cout, " "));
@@ -73,10 +79,13 @@ void on_trackbar(int,void*)
   detector = cv::SimpleBlobDetector::create(params);
 }
 
+/////////////////////////// Main Program ///////////////////////////////////////
 int main( int argc, char** argv )
 {
 
-  VideoCapture cap(1); // open the default camera
+  /////////////////////// Open Camera, Setup Stuff /////////////////////////////
+
+  VideoCapture cap(1); // open the camera (opens default cam 0 otherwise)
   if(!cap.isOpened())  // check if we succeeded
       return -1;
 
@@ -84,11 +93,11 @@ int main( int argc, char** argv )
   // Storage for blobs
   std::vector<KeyPoint> keypointList;
 
-  // Create window
+  // Create windows
   namedWindow("keypoints",1);
   namedWindow("threshold",1);
 
-  //Create TrackBars for keypoints
+  //Create TrackBars for keypoints parameters
   char minTname[30];
   char maxTname[30];
   char areaName[30];
@@ -111,12 +120,12 @@ int main( int argc, char** argv )
   createTrackbar(inertiaName,"keypoints",&inertiaSlider,inertiaMax,on_trackbar );
 
       //-- Trackbars to set thresholds for RGB values
-  createTrackbar("Low R","threshold", &low_r, 255, on_low_r_thresh_trackbar);
-  createTrackbar("High R","threshold", &high_r, 255, on_high_r_thresh_trackbar);
-  createTrackbar("Low G","threshold", &low_g, 255, on_low_g_thresh_trackbar);
-  createTrackbar("High G","threshold", &high_g, 255, on_high_g_thresh_trackbar);
-  createTrackbar("Low B","threshold", &low_b, 255, on_low_b_thresh_trackbar);
-  createTrackbar("High B","threshold", &high_b, 255, on_high_b_thresh_trackbar);
+  //createTrackbar("Low R","threshold", &low_r, 255, on_low_r_thresh_trackbar);
+  //createTrackbar("High R","threshold", &high_r, 255, on_high_r_thresh_trackbar);
+  //createTrackbar("Low G","threshold", &low_g, 255, on_low_g_thresh_trackbar);
+  //createTrackbar("High G","threshold", &high_g, 255, on_high_g_thresh_trackbar);
+  //createTrackbar("Low B","threshold", &low_b, 255, on_low_b_thresh_trackbar);
+  //createTrackbar("High B","threshold", &high_b, 255, on_high_b_thresh_trackbar);
 
   // Will be used later to hold starting centroid of blobs
   Point2f b(0.0,0.0);
@@ -125,45 +134,47 @@ int main( int argc, char** argv )
 
   // Capture the reference images
   Mat ref;
-  Mat ref2;
-
   cap >> ref;
-  waitKey(200);
-  cap >> ref2;
 
+  int counter2 = 1;
 
-  //cout << ref/ref2 << endl;
-
-
-
-  //cvtColor(ref,ref,COLOR_RGB2GRAY);
-  string ty = type2str(ref.type());
-  printf("Matrix: %s %dx%d \n", ty.c_str(),ref.cols,ref.rows);
-
+  ////////////////////////// The Infinite Loop ////////////////////////////////
   while (1)
   {
       Mat im;
       Mat imConvert;
       Mat filtered;
+      double min,max;
+
+      // The following commands are not used here but may be useful
+
+            //cvtColor(im,im,COLOR_RGB2GRAY); Converts to grayscale images
+            //absdiff(im,ref,filtered); Gives the differenced image between two images
+            //bitwise_not(filtered,filtered); Inverts image pixels
+            //inRange(im,Scalar(low_b,low_g,low_r), Scalar(high_b,high_g,high_r),filtered); Color thresholding
+            //adaptiveThreshold(im,im,150,ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY,11,12); Adaptive thresholding
+
+      ////////////////// Read new image, compare to reference //////////////////
 
       cap >> im; // get a new frame from camera
 
-      //cvtColor(im,im,COLOR_RGB2GRAY);
+      // Normalize the results
+      im = im*50;
+      minMaxLoc(im,&min,&max);
+      im = im - min;
+      im = (im/(max-min))*255;
 
-      filtered = (im*100)/ref;
-      //absdiff(im,ref,filtered);
-      cvtColor(filtered,filtered,COLOR_RGB2GRAY);
-      threshold(filtered,filtered,80,200,0);
-      //bitwise_not(filtered,filtered);
+      // Divide out the reference background image
+      filtered = im/ref;
 
-      //adaptiveThreshold(im,im,150,ADAPTIVE_THRESH_GAUSSIAN_C,THRESH_BINARY,11,12);
-      //threshold(im,im,100,200,0);
-      //inRange(im,Scalar(low_b,low_g,low_r), Scalar(high_b,high_g,high_r),filtered);
-      //bitwise_not(filtered,filtered);
+      cvtColor(filtered,filtered,COLOR_RGB2GRAY); // Convert to grayscale
+      threshold(filtered,filtered,60,200,0); // Threshold the result
+
       GaussianBlur(im, im, Size(7,7), 1.5, 1.5);
       GaussianBlur(filtered,filtered,Size(7,7),1.5,1.5);
       on_trackbar(areaSlider, 0);
-      // Detect blobs
+
+      //////////////// Detect and Display Blobs ////////////////////////////////
       detector->detect( filtered, keypointList );
 
       // Draw detected blobs as red circles.
@@ -178,6 +189,8 @@ int main( int argc, char** argv )
       imshow("threshold",filtered);
       //imshow("Original",im);
 
+
+      //////////////////// Calculate Blob Centroid /////////////////////////////
       // Check if there are any keypoints in view
       if (keypointList.size() > 0){
 
@@ -206,7 +219,7 @@ int main( int argc, char** argv )
         if (counter < 100){
           startPoint = centroidVal;
           counter++;
-        //  cout << "caught Start!" << endl;
+
         }
         // Afterwards, lock the starting centroid
 
@@ -231,6 +244,7 @@ int main( int argc, char** argv )
   return 0;
 }
 
+//////////////////////////// Assist Functions /////////////////////////////////
 
 void on_low_r_thresh_trackbar(int, void *)
 {
