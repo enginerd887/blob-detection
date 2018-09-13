@@ -1,6 +1,7 @@
 #include "opencv2/opencv.hpp"
 #include "opencv2/features2d.hpp"
 #include "opencv2/highgui.hpp"
+#include <iostream>
 #include <cmath>
 #include <algorithm>
 #include <iterator>
@@ -20,6 +21,9 @@ void on_low_b_thresh_trackbar(int, void *);
 void on_high_b_thresh_trackbar(int, void *);
 string type2str(int type);
 
+
+void CallBackFunc(int event, int x, int y, int flags, void* userdata);
+
 // Globals (May need to scan through this and delete stuff)
 int low_r=30, low_g=30, low_b=30;
 int high_r=100, high_g=100, high_b=100;
@@ -38,7 +42,13 @@ int convexSlider = 87;
 int circleSlider = 3;
 int inertiaSlider = 1;
 
+int Imultiply = 20;
+double multiplier = 20;
+
 int oldSize = 0;
+int mouseClicked = 0;
+
+Mat ref;
 
 /////////////////////// Blob Detector Setup ///////////////////////////////////
 
@@ -77,6 +87,8 @@ void on_trackbar(int,void*)
   params.minInertiaRatio = (double)inertiaSlider/inertiaMax;
 
   detector = cv::SimpleBlobDetector::create(params);
+
+  multiplier = (double)Imultiply;
 }
 
 /////////////////////////// Main Program ///////////////////////////////////////
@@ -105,12 +117,15 @@ int main( int argc, char** argv )
   char convexName[30];
   char inertiaName[30];
 
+  char multiplierName[30];
+
   sprintf(minTname,"Min. Threshold");
   sprintf(maxTname,"Max. Threshold");
   sprintf(areaName,"Min. Pixel Area");
   sprintf(circleName,"Min. Circularity");
   sprintf(convexName, "Min. Convexity");
   sprintf(inertiaName,"Min. Inertia Ratio");
+  sprintf(multiplierName,"Image Multiplier");
 
   createTrackbar(minTname,"keypoints",&minTslider,minTmax,on_trackbar );
   createTrackbar(maxTname,"keypoints",&maxTslider,maxTmax,on_trackbar );
@@ -118,6 +133,8 @@ int main( int argc, char** argv )
   createTrackbar(circleName,"keypoints",&circleSlider,circleMax,on_trackbar );
   createTrackbar(convexName,"keypoints",&convexSlider,convexMax,on_trackbar );
   createTrackbar(inertiaName,"keypoints",&inertiaSlider,inertiaMax,on_trackbar );
+
+  createTrackbar(multiplierName,"threshold",&Imultiply,200,on_trackbar );
 
       //-- Trackbars to set thresholds for RGB values
   //createTrackbar("Low R","threshold", &low_r, 255, on_low_r_thresh_trackbar);
@@ -133,10 +150,13 @@ int main( int argc, char** argv )
   int counter = 0;
 
   // Capture the reference images
-  Mat ref;
+
   cap >> ref;
 
   int counter2 = 1;
+
+  // Set the mouse CallBackFunc
+  setMouseCallback("threshold",CallBackFunc,NULL);
 
   ////////////////////////// The Infinite Loop ////////////////////////////////
   while (1)
@@ -156,16 +176,22 @@ int main( int argc, char** argv )
 
       ////////////////// Read new image, compare to reference //////////////////
 
+      if (mouseClicked == 1)
+      {
+        cap >> ref;
+        mouseClicked = 0;
+      }
+
       cap >> im; // get a new frame from camera
 
       // Normalize the results
-      im = im*50;
-      minMaxLoc(im,&min,&max);
-      im = im - min;
-      im = (im/(max-min))*255;
+      //im = im*100;
+      //minMaxLoc(im,&min,&max);
+      //im = im - min;
+      //im = (im/(max-min))*255;
 
       // Divide out the reference background image
-      filtered = im/ref;
+      filtered = im*multiplier/ref;
 
       cvtColor(filtered,filtered,COLOR_RGB2GRAY); // Convert to grayscale
       threshold(filtered,filtered,60,200,0); // Threshold the result
@@ -245,6 +271,24 @@ int main( int argc, char** argv )
 }
 
 //////////////////////////// Assist Functions /////////////////////////////////
+
+void CallBackFunc(int event, int x, int y, int flags, void* userdata)
+{
+     if  ( event == EVENT_LBUTTONDOWN )
+     {
+       mouseClicked = 1;
+       cout << "Reference Image Reset" << endl;
+     }
+     else if  ( event == EVENT_RBUTTONDOWN )
+     {
+          cout << "Right button of the mouse is clicked - position (" << x << ", " << y << ")" << endl;
+     }
+     else if  ( event == EVENT_MBUTTONDOWN )
+     {
+          cout << "Middle button of the mouse is clicked - position (" << x << ", " << y << ")" << endl;
+     }
+
+}
 
 void on_low_r_thresh_trackbar(int, void *)
 {

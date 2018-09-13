@@ -26,6 +26,15 @@ The number in parentheses tells OpenCV which camera you want to use. If it is se
 
 As written, the code allows the user to filter possible blob candidates by Threshold (color difference with surroundings), Area (# of pixels filled up), Circularity (self-explanatory), Convexity, and Inertia. These flags can be set to true or false. If true, the values to filter by can be set as well.
 
+# Background thresholding
+The code currently takes a reference image at the beginning of its run, and then compares the incoming data stream to that reference image in order to see differences relative to the original "background". It does so by using the formula:
+
+```
+Output Image = (Current Image * multiplier)/Reference Image;
+```
+The multiplier is determined by a trackbar on the window, which can be scaled from 0 to 200.
+The reference image can be reset by left-clicking in the window.
+
 # Centroid detection
 
 The code now allows for centroid detection. In each frame, it will average out the x and y locations of the keypoints in order to determine the centroid, and will then plot said centroid as a green filled circle on the image in real time. Test it out using the following images:
