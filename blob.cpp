@@ -190,8 +190,11 @@ int main( int argc, char** argv )
       //im = im - min;
       //im = (im/(max-min))*255;
 
-      // Divide out the reference background image
+      // Divide out the reference background image, normalize result
       filtered = im*multiplier/ref;
+      minMaxLoc(filtered,&min,&max);
+      filtered = filtered - min;
+      filtered = (filtered/(max-min))*255;
 
       cvtColor(filtered,filtered,COLOR_RGB2GRAY); // Convert to grayscale
       threshold(filtered,filtered,60,200,0); // Threshold the result

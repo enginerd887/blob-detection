@@ -35,6 +35,14 @@ Output Image = (Current Image * multiplier)/Reference Image;
 The multiplier is determined by a trackbar on the window, which can be scaled from 0 to 200.
 The reference image can be reset by left-clicking in the window.
 
+The result is then normalized using:
+
+```
+Find min of result
+Find max of result
+Normalized Data = ((Old Data - min)/(max-min))*255;
+```
+
 # Centroid detection
 
 The code now allows for centroid detection. In each frame, it will average out the x and y locations of the keypoints in order to determine the centroid, and will then plot said centroid as a green filled circle on the image in real time. Test it out using the following images:
