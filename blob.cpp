@@ -30,25 +30,26 @@ int high_r=100, high_g=100, high_b=100;
 
 const int minTmax = 50;
 const int maxTmax = 1000;
-const int areaMax = 1000;
+const int areaMax = 2000;
 const int convexMax = 100;
 const int circleMax = 100;
 const int inertiaMax = 100;
 
 int minTslider = 20;
 int maxTslider = 1000;
-int areaSlider = 600;
-int convexSlider = 87;
+int areaSlider = 100;
+int convexSlider = 1;
 int circleSlider = 3;
 int inertiaSlider = 1;
 
-int Imultiply = 20;
-double multiplier = 20;
+int Imultiply = 60;
+int threshVal = 100;
+double multiplier = 60;
+double threshValue = 100;
 
 int oldSize = 0;
 int mouseClicked = 0;
 
-Mat ref;
 
 /////////////////////// Blob Detector Setup ///////////////////////////////////
 
@@ -89,6 +90,7 @@ void on_trackbar(int,void*)
   detector = cv::SimpleBlobDetector::create(params);
 
   multiplier = (double)Imultiply;
+  threshValue = (double)threshVal;
 }
 
 /////////////////////////// Main Program ///////////////////////////////////////
@@ -98,16 +100,25 @@ int main( int argc, char** argv )
   /////////////////////// Open Camera, Setup Stuff /////////////////////////////
 
   VideoCapture cap(1); // open the camera (opens default cam 0 otherwise)
+  //cvSetCaptureProperty(cap,CV_CAP_PROP_AUTO_EXPOSURE,0.0);
+  cap.set(CV_CAP_PROP_AUTO_EXPOSURE,0.0);
+  cap.set(CV_CAP_PROP_EXPOSURE,50);
+
+
+
   if(!cap.isOpened())  // check if we succeeded
       return -1;
 
 
   // Storage for blobs
   std::vector<KeyPoint> keypointList;
+  std::vector<KeyPoint> keypointList2;
+
 
   // Create windows
   namedWindow("keypoints",1);
   namedWindow("threshold",1);
+  //namedWindow("threshold2",1);
 
   //Create TrackBars for keypoints parameters
   char minTname[30];
@@ -118,6 +129,7 @@ int main( int argc, char** argv )
   char inertiaName[30];
 
   char multiplierName[30];
+  char thresholdName[30];
 
   sprintf(minTname,"Min. Threshold");
   sprintf(maxTname,"Max. Threshold");
@@ -126,6 +138,7 @@ int main( int argc, char** argv )
   sprintf(convexName, "Min. Convexity");
   sprintf(inertiaName,"Min. Inertia Ratio");
   sprintf(multiplierName,"Image Multiplier");
+  sprintf(thresholdName,"Gray Threshold");
 
   createTrackbar(minTname,"keypoints",&minTslider,minTmax,on_trackbar );
   createTrackbar(maxTname,"keypoints",&maxTslider,maxTmax,on_trackbar );
@@ -135,6 +148,7 @@ int main( int argc, char** argv )
   createTrackbar(inertiaName,"keypoints",&inertiaSlider,inertiaMax,on_trackbar );
 
   createTrackbar(multiplierName,"threshold",&Imultiply,200,on_trackbar );
+  createTrackbar(thresholdName,"threshold",&threshVal,255,on_trackbar );
 
       //-- Trackbars to set thresholds for RGB values
   //createTrackbar("Low R","threshold", &low_r, 255, on_low_r_thresh_trackbar);
@@ -149,21 +163,31 @@ int main( int argc, char** argv )
   Point startPoint = b;
   int counter = 0;
 
+  Mat im;
+  Mat imAverage;
+  Mat imCurrent;
+  Mat filtered;
+  Mat filtered2;
+  Mat ref;
+
   // Capture the reference images
 
-  cap >> ref;
+  cap >> im;
+  cap >> imAverage;
+  ref = Mat::zeros(im.size(),CV_32FC3);
 
   int counter2 = 1;
 
   // Set the mouse CallBackFunc
   setMouseCallback("threshold",CallBackFunc,NULL);
-
+  int AvgCounter = 0;
+  double xAccum = 0.0;
+  double yAccum = 0.0;
+  double alpha = .5;
   ////////////////////////// The Infinite Loop ////////////////////////////////
   while (1)
   {
-      Mat im;
-      Mat imConvert;
-      Mat filtered;
+
       double min,max;
 
       // The following commands are not used here but may be useful
@@ -184,38 +208,46 @@ int main( int argc, char** argv )
 
       cap >> im; // get a new frame from camera
 
-      // Normalize the results
-      //im = im*100;
-      //minMaxLoc(im,&min,&max);
-      //im = im - min;
-      //im = (im/(max-min))*255;
+      //accumulateWeighted(im,im,0.5);
+      if (AvgCounter < 20){
+        AvgCounter++;
+        add(imAverage,im,imAverage);
+        divide(imAverage,2,imAverage);
+      }
+
+      subtract(im,imAverage,imCurrent);
 
       // Divide out the reference background image, normalize result
-      filtered = im*multiplier/ref;
+      filtered = imCurrent*multiplier/imAverage;
       minMaxLoc(filtered,&min,&max);
       filtered = filtered - min;
       filtered = (filtered/(max-min))*255;
 
-      cvtColor(filtered,filtered,COLOR_RGB2GRAY); // Convert to grayscale
-      threshold(filtered,filtered,60,200,0); // Threshold the result
+      cvtColor(imCurrent,imCurrent,COLOR_RGB2GRAY);
+      threshold(imCurrent,filtered,threshValue,255,0);
+      bitwise_not(filtered,filtered);
+      imshow("keypoints",imCurrent);
+      imshow("threshold",filtered);
 
-      GaussianBlur(im, im, Size(7,7), 1.5, 1.5);
-      GaussianBlur(filtered,filtered,Size(7,7),1.5,1.5);
+
       on_trackbar(areaSlider, 0);
 
       //////////////// Detect and Display Blobs ////////////////////////////////
       detector->detect( filtered, keypointList );
-
+      //detector->detect( filtered2, keypointList2);
       // Draw detected blobs as red circles.
       // DrawMatchesFlags::DRAW_RICH_KEYPOINTS flag ensures
       // the size of the circle corresponds to the size of blob
 
       Mat im_with_keypoints;
+      //Mat im_with_refpoints;
       drawKeypoints( im, keypointList, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
-
+      //drawKeypoints( im, keypointList2,im_with_refpoints, Scalar(255,0,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+      //addWeighted(im_with_keypoints,.5,im_with_refpoints,.5,0.0,im_with_keypoints);
       // Show blobs
       imshow("keypoints", im_with_keypoints );
       imshow("threshold",filtered);
+      //imshow("threshold2",filtered2);
       //imshow("Original",im);
 
 
@@ -235,12 +267,14 @@ int main( int argc, char** argv )
         // Divide by number of keypoints to get centroid of blobs
         double xAvg = xSum/keypointList.size();
         double yAvg = ySum/keypointList.size();
+        xAccum = (alpha*xAvg)+(1-alpha)*xAccum;
+        yAccum = (alpha*yAvg)+(1-alpha)*yAccum;
 
         // Output the centroid
         //cout << xAvg << " " << yAvg << endl;
 
         // Convert centroid values to an OpenCV "Point"
-        Point2f a(xAvg,yAvg);
+        Point2f a(xAccum,yAccum);
         Point centroidVal = a;
 
 
@@ -256,8 +290,8 @@ int main( int argc, char** argv )
 
         //syntax:
         //circle(image,center point, size, color, fill, lineType)
-        circle(im_with_keypoints,centroidVal,10.0,Scalar(100,255,100),-1,8);
-        circle(im_with_keypoints,startPoint,10.0,Scalar(100,150,50),-1,8);
+        circle(im_with_keypoints,centroidVal,10.0,Scalar(255,0,0),-1,8);
+        //circle(im_with_keypoints,startPoint,10.0,Scalar(100,150,50),-1,8);
 
         //Draw the circle to the screen
         imshow("keypoints", im_with_keypoints);
