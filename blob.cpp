@@ -169,6 +169,7 @@ int main( int argc, char** argv )
   Mat filtered;
   Mat filtered2;
   Mat ref;
+  Mat imInv;
 
   // Capture the reference images
 
@@ -215,6 +216,9 @@ int main( int argc, char** argv )
         divide(imAverage,2,imAverage);
       }
 
+      //cvtColor(imAverage,imAverage,COLOR_RGB2GRAY);
+      bitwise_not(imAverage,imInv);
+
       subtract(im,imAverage,imCurrent);
 
       // Divide out the reference background image, normalize result
@@ -226,8 +230,8 @@ int main( int argc, char** argv )
       cvtColor(imCurrent,imCurrent,COLOR_RGB2GRAY);
       threshold(imCurrent,filtered,threshValue,255,0);
       bitwise_not(filtered,filtered);
-      imshow("keypoints",imCurrent);
-      imshow("threshold",filtered);
+
+      //imshow("threshold2",imInv);
 
 
       on_trackbar(areaSlider, 0);
@@ -241,13 +245,13 @@ int main( int argc, char** argv )
 
       Mat im_with_keypoints;
       //Mat im_with_refpoints;
-      drawKeypoints( im, keypointList, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
+      drawKeypoints( imCurrent, keypointList, im_with_keypoints, Scalar(0,0,255), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
       //drawKeypoints( im, keypointList2,im_with_refpoints, Scalar(255,0,0), DrawMatchesFlags::DRAW_RICH_KEYPOINTS );
       //addWeighted(im_with_keypoints,.5,im_with_refpoints,.5,0.0,im_with_keypoints);
       // Show blobs
       imshow("keypoints", im_with_keypoints );
       imshow("threshold",filtered);
-      //imshow("threshold2",filtered2);
+      //imshow("threshold2",imInv);
       //imshow("Original",im);
 
 
